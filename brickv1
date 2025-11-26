@@ -1,240 +1,344 @@
---// Brick_Lite.lua
--- Versão limpa com apenas Anti Unanchored Fling e Anti Trip
--- GUI original preservada
--- Feito por LUA Programming GOD
+--[=[
+    Script: LastLetterHelper (Executável)
+    Função: GUI para o jogo "Last Letter" com busca de palavras por prefixo.
+    Características: Bordas arredondadas, animações de fade, lógica de cache de palavras.
+]=]
 
---== Inicialização de Serviços ==--
+-- [[ SERVIÇOS ]]
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+local Chat = game:GetService("Chat") -- Para enviar a palavra no chat
 
---== Estrutura da GUI Original ==--
+-- [[ CONFIGURAÇÕES ]]
+local FADE_TIME = 0.25 -- Tempo da animação (rápido e profissional)
+local GUI_COLOR = Color3.fromRGB(40, 40, 40)
+local BUTTON_COLOR = Color3.fromRGB(60, 60, 60)
+local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
+local CORNER_RADIUS = 8 -- Bordas arredondadas
+
+-- [[ LÓGICA DO DICIONÁRIO E CACHE (Self-Contained) ]]
+local WordData = {}
+
+-- Cache para palavras já usadas (O(1) lookup)
+local usedWords = {} 
+
+-- Otimizado para busca por prefixo (Primeira Letra -> Lista de Palavras)
+-- Vou usar uma pequena lista para demonstrar a estrutura pura.
+-- VOCÊ deve preencher isso com um grande dicionário de A a Z.
+WordData.Dictionary = {
+        A = {
+        "AARDVARK", "AARON", "ABA", "ABABA", "ABANDON", "ABANDONED", "ABASE", "ABASH", "ABATE", 
+        "ABATEMENT", "ABATIS", "ABATTOIR", "ABAXIAL", "ABAYA", "ABBA", "ABBESS", "ABBEY", "ABBOT", 
+        "ABBREVIATE", "ABBREVIATION", "ABC", "ABDICATE", "ABDOMEN", "ABDOMINAL", "ABDUCT", "ABDUCTION", 
+        "ABEAM", "ABED", "ABEL", "ABERRANT", "ABERRATION", "ABET", "ABETTOR", "ABEYANCE", "ABHOR", 
+        "ABHORRENCE", "ABIDE", "ABILITY", "ABJECT", "ABJURE", "ABLATIVE", "ABLAZE", "ABLE", "ABNORMAL", 
+        "ABODE", "ABOLISH", "ABOLITION", "ABOMINABLE", "ABOMINATE", "ABOMINATION", "ABORIGINAL", 
+        "ABORIGINE", "ABORT", "ABORTION", "ABORTIVE", "ABOUND", "ABOUT", "ABOVE", "ABRASION", "ABRASIVE", 
+        "ABREAST", "ABRIDGE", "ABRIDGMENT", "ABROAD", "ABROGATE", "ABRUPT", "ABSCESS", "ABSCOND", 
+        "ABSENCE", "ABSENT", "ABSOLUTE", "ABSOLUTION", "ABSOLVE", "ABSORB", "ABSORBENT", "ABSORPTION", 
+        "ABSTAIN", "ABSTEMIOUS", "ABSTENTION", "ABSTRACT", "ABSTRUSE", "ABSURD", "ABUNDANCE", "ABUSE", 
+        "ABUT", "ABUTMENT", "ABYSS", "ACACIA", "ACADEMIC", "ACADEMY", "ACANTHUS", "ACCEDE", "ACCELERATE", 
+        "ACCELERATION", "ACCELERATOR", "ACCENT", "ACCEPT", "ACCEPTABLE", "ACCESS", "ACCESSIBLE", 
+        "ACCESSION", "ACCESSORY", "ACCIDENT", "ACCLAIM", "ACCLIMATIZE", "ACCOLADE", "ACCOMMODATE", 
+        "ACCOMPANY", "ACCOMPLICE", "ACCOMPLISH", "ACCORD", "ACCORDANCE", "ACCORDING", "ACCORDION", 
+        "ACCOST", "ACCOUNT", "ACCOUNTABLE", "ACCOUNTANT", "ACCOUPLE", "ACCOUTER", "ACCREDIT", "ACCRUE", 
+        "ACCUMULATE", "ACCURACY", "ACCURATE", "ACCUSATION", "ACCUSE", "ACCUSER", "ACCUSTOM", "ACE", 
+        "ACERBITY", "ACETIC", "ACETONE", "ACHE", "ACHIEVE", "ACID", "ACIDITY", "ACKNOWLEDGE", 
+        "ACKNOWLEDGMENT", "ACME", "ACNE", "ACOLYTE", "ACONITE", "ACORN", "ACOUSTIC", "ACQUAINT", 
+        "ACQUAINTANCE", "ACQUIESCE", "ACQUIRE", "ACQUISITION", "ACQUIT", "ACRE", "ACRID", "ACRIMONY", 
+        "ACROBAT", "ACRONYM", "ACROSS", "ACROSTIC", "ACT", "ACTION", "ACTIVATE", "ACTIVE", "ACTOR", 
+        "ACTUAL", "ACTUARY", "ACTUATE", "ACUMEN", "ACUPUNCTURE", "ACUTE", "ADAGE", "ADAM", "ADAMANT", 
+        "ADAPT", "ADD", "ADDENDUM", "ADDER", "ADDICT", "ADDITION", "ADDITIONAL", "ADDITIVE", "ADDLE", 
+        "ADDRESS", "ADDUCE", "ADEPT", "ADEQUATE", "ADHERE", "ADHERENT", "ADHESIVE", "ADIEU", "ADIPOSE", 
+        "ADJACENT", "ADJECTIVE", "ADJOIN", "ADJOURN", "ADJUDGE", "ADJUNCT", "ADJURE", "ADJUST", 
+        "ADJUTANT", "ADLIB", "ADMINISTER", "ADMINISTRATION", "ADMIRABLE", "ADMIRAL", "ADMIRE", 
+        "ADMISSION", "ADMIT", "ADMITTANCE", "ADMONISH", "ADOBE", "ADOLESCENCE", "ADOPT", "ADOPTION", 
+        "ADORE", "ADORN", "ADRENALIN", "ADRIFT", "ADROIT", "ADULATION", "ADULT", "ADULTERATE", 
+        "ADULTERY", "ADVANCE", "ADVANTAGE", "ADVENT", "ADVENTURE", "ADVERB", "ADVERSE", "ADVERTISE", 
+        "ADVICE", "ADVISABLE", "ADVISE", "ADVOCATE", "AERIAL", "AEROBIC", "AERONAUT", "AEROSOL", 
+        "AESTHETIC", "AFAR", "AFFABLE", "AFFAIR", "AFFECT", "AFFECTION", "AFFIDAVIT", "AFFILIATE", 
+        "AFFINITY", "AFFIRM", "AFFLICT", "AFFLUENCE", "AFFORD", "AFFRAY", "AFFRONT", "AFLOAT", 
+        "AFOOT", "AFRAID", "AFRESH", "AFTER", "AFTERMATH", "AGAIN", "AGAINST", "AGAPE", "AGATE", 
+        "AGE", "AGENCY", "AGENT", "AGGLOMERATE", "AGGRANDIZE", "AGGRAVATE", "AGGREGATE", "AGGRESSION", 
+        "AGGRESSOR", "AGILE", "AGITATE", "AGNATE", "AGNOSTIC", "AGO", "AGONIZE", "AGONY", "AGRARIAN", 
+        "AGREE", "AGRICULTURE", "AGUE", "AHEAD", "AID", "AIL", "AILMENT", "AIM", "AIR", "AIRCRAFT", 
+        "AISLE", "AJAR", "AKIN", "ALABASTER", "ALACRITY", "ALARM", "ALAS", "ALBINO", "ALBUM", 
+        "ALCHEMIST", "ALCHEMY", "ALCOHOL", "ALCOVE", "ALDER", "ALDERS", "ALDINE", "ALE", "ALERT", 
+        "ALFALFA", "ALGAE", "ALGEBRA", "ALIAS", "ALIEN", "ALIENATE", "ALIGN", "ALIKE", "ALIMENT", 
+        "ALIMONY", "ALIVE", "ALL", "ALLAY", "ALLEGATION", "ALLEGE", "ALLEGIANCE", "ALLEGORY", 
+        "ALLEGRO", "ALLELUIA", "ALLERGY", "ALLEVIATE", "ALLEY", "ALLIANCE", "ALLIGATOR", "ALLOT", 
+        "ALLOW", "ALLOY", "ALLSPICE", "ALLUDE", "ALLURE", "ALLUSION", "ALLUSIVE", "ALLY", "ALMANAC", 
+        "ALMIGHTY", "ALMOND", "ALMOST", "ALMS", "ALOE", "ALOFT", "ALOHA", "ALONE", "ALONG", 
+        "ALOOF", "ALOUD", "ALPACA", "ALPHABET", "ALPHABETIC", "ALPINIST", "ALREADY", "ALRIGHT", 
+        "ALSO", "ALTAR", "ALTER", "ALTERCATE", "ALTHOUGH", "ALTIMETER", "ALTITUDE", "ALTOGETHER", 
+        "ALTRUISM", "ALUMINA", "ALUMINUM", "ALUM", "ALVEOLAR", "ALWAYS", "AMALGAM", "AMASS", "AMATEUR", 
+        "AMATORY", "AMAZE", "AMAZEMENT", "AMAZON", "AMBASSADOR", "AMBER", "AMBIENCE", "AMBIGUOUS", 
+        "AMBITION", "AMBLE", "AMBROSIAL", "AMBULANCE", "AMBUSCADE", "AMBUSH", "AMEBA", "AMENABLE", 
+        "AMEND", "AMENDS", "AMENITY", "AMERICA", "AMETHYST", "AMIABLE", "AMICABLE", "AMID", "AMISS", 
+        "AMITY", "AMMONIA", "AMMUNITION", "AMNESIA", "AMNESTY", "AMOEBA", "AMOK", "AMONG", "AMOROUS", 
+        "AMORPHOUS", "AMOUNT", "AMPERE", "AMPHIBIAN", "AMPLE", "AMPLIFY", "AMPUTATE", "AMULET", 
+        "AMUSE", "ANACHRONISM", "ANACONDA", "ANAGRAM", "ANALGESIC", "ANALOGOUS", "ANALOGY", "ANALYSIS", 
+        "ANALYST", "ANALYZE", "ANARCHY", "ANATHEMA", "ANATOMY", "ANCESTOR", "ANCHOR", "ANCIENT", 
+        "AND", "ANECDOTE", "ANEMIA", "ANEMOMETER", "ANEMONE", "ANESTHESIA", "ANEURYSM", "ANGEL", 
+        "ANGER", "ANGLE", "ANGLER", "ANGLO", "ANGRY", "ANGUISH", "ANIMAL", "ANIMATE", "ANIMOSITY", 
+        "ANKLE", "ANNALS", "ANNEAL", "ANNE", "ANNEX", "ANNIHILATE", "ANNIVERSARY", "ANNOTATE", 
+        "ANNOUNCE", "ANNOY", "ANNUAL", "ANNUITY", "ANNUL", "ANODE", "ANOMALY", "ANONYMOUS", "ANOTHER", 
+        "ANSWER", "ANT", "ANTAGONISM", "ANTARCTIC", "ANTE", "ANTECEDENT", "ANTELOPE", "ANTENNA", 
+        "ANTERIOR", "ANTHEM", "ANTHOLOGY", "ANTHRAX", "ANTIC", "ANTICIPATE", "ANTICLIMAX", "ANTIDOTE", 
+        "ANTIFREEZE", "ANTIPATHY", "ANTIQUITY", "ANTISEPTIC", "ANTITHESIS", "ANTLER", "ANTONYM", 
+        "ANUS", "ANVIL", "ANXIETY", "ANY", "ANYBODY", "ANYHOW", "ANYONE", "ANYTHING", "ANYWAY", 
+        "ANYWHERE", "AORTA", "APART", "APARTMENT", "APATHY", "APE", "APERIENT", "APERTURE", "APEX", 
+        "APHID", "APHORISM", "APIECE", "APLOMB", "APOCALYPSE", "APOCRYPHAL", "APOLOGY", "APOSTLE", 
+        "APOTHECARY", "APPALL", "APPARATUS", "APPAREL", "APPARENT", "APPARITION", "APPEAL", "APPEAR", 
+        "APPEASE", "APPELLANT", "APPELLATE", "APPEND", "APPENDAGE", "APPENDIX", "APPERTAIN", "APPETITE", 
+        "APPLAUD", "APPLE", "APPLIANCE", "APPLICABLE", "APPLICATION", "APPLY", "APPOINT", "APPORTION", 
+        "APPOSITE", "APPRAISE", "APPRECIATE", "APPREHEND", "APPRENTICE", "APPROACH", "APPROBATION", 
+        "APPROPRIATE", "APPROVE", "APPROXIMATE", "APRIL", "APRON", "APROPOS", "APT", "AQUARIUM", 
+        "AQUATIC", "AQUEDUCT", "ARAB", "ARABESQUE", "ARABLE", "ARBITER", "ARBITRARY", "ARBOR", 
+        "ARC", "ARCADE", "ARCH", "ARCHAIC", "ARCHANGEL", "ARCHER", "ARCHETYPE", "ARCHIPELAGO", 
+        "ARCHITECTURE", "ARCHIVE", "ARCTIC", "ARDENT", "ARDUOUS", "AREA", "ARENA", "ARGENT", "ARGUE", 
+        "ARID", "ARISE", "ARISTOCRAT", "ARITHMETIC", "ARK", "ARM", "ARMAMENT", "ARMISTICE", "ARMOR", 
+        "ARMY", "AROMA", "AROUSE", "ARRAIGN", "ARRANGE", "ARRAY", "ARREARS", "ARREST", "ARRIVAL", 
+        "ARRIVE", "ARROGANT", "ARROW", "ARSENAL", "ARSENIC", "ARSON", "ART", "ARTERIAL", "ARTERY", 
+        "ARTFUL", "ARTICLE", "ARTICULATE", "ARTIFICE", "ARTIFICIAL", "ARTILLERY", "ARTISAN", "ARTIST", 
+        "AS", "ASCEND", "ASCERTAIN", "ASCETIC", "ASCRIBE", "ASH", "ASIDE", "ASK", "ASKEW", "ASLEEP", 
+        "ASPARAGUS", "ASPECT", "ASPERSION", "ASPHALT", "ASPIRANT", "ASPIRATE", "ASPIRE", "ASS", 
+        "ASSAIL", "ASSASSIN", "ASSAULT", "ASSAY", "ASSEMBLE", "ASSENT", "ASSERT", "ASSESS", "ASSET", 
+        "ASSIDUOUS", "ASSIGN", "ASSIMILATE", "ASSIST", "ASSOCIATE", "ASSORT", "ASSUAGE", "ASSUME", 
+        "ASSURANCE", "ASSURE", "ASTERISK", "ASTERN", "ASTHMA", "ASTONISH", "ASTOUND", "ASTRADDLE", 
+        "ASTRAL", "ASTRINGENT", "ASTROLOGY", "ASTRONAUT", "ASTRONOMY", "ASTUTE", "ASUNDER", "ASYLUM", 
+        "AT", "ATE", "ATHEISM", "ATHLETE", "ATLAS", "ATMOSPHERE", "ATOM", "ATONE", "ATROCIOUS", 
+        "ATTACH", "ATTACK", "ATTAIN", "ATTEMPT", "ATTEND", "ATTENTION", "ATTEST", "ATTIRE", "ATTITUDE", 
+        "ATTORNEY", "ATTRACT", "ATTRIBUTE", "ATTRITION", "ATYPICAL", "AUBURN", "AUCTION", "AUDACIOUS", 
+        "AUDIBLE", "AUDIENCE", "AUDIT", "AUGMENT", "AUGUR", "AUGUST", "AUNT", "AURORA", "AUSPICIOUS", 
+        "AUSTERE", "AUTHENTIC", "AUTHOR", "AUTOBIOGRAPHY", "AUTOCRAT", "AUTOMATIC", "AUTOMOBILE", 
+        "AUTONOMY", "AUTUMN", "AUXILIARY", "AVAIL", "AVALANCHE", "AVANT", "AVARICE", "AVE", "AVENGE", 
+        "AVENUE", "AVER", "AVERAGE", "AVERSION", "AVERT", "AVIARY", "AVIATION", "AVID", "AVOCADO", 
+        "AVOID", "AVOUCH", "AVOW", "AWAIT", "AWAKE", "AWARD", "AWARE", "AWAY", "AWE", "AWESOME", 
+        "AWHILE", "AWKWARD", "AWN", "AXE", "AXIOM", "AXIS", "AXLE", "AYE", "AZURE", "AZIMUTH"
+    }
+
+}
+
+-- Função principal para encontrar a palavra e marcá-la como usada
+function WordData:FindWord(prefix: string)
+    local prefixLower = prefix:lower()
+    local firstLetter = prefixLower:sub(1, 1)
+
+    local list = self.Dictionary[firstLetter:upper()]
+    if not list then return nil end
+
+    -- Percorre e verifica o cache
+    for _, word in ipairs(list) do
+        if word:lower():sub(1, #prefixLower) == prefixLower and not usedWords[word] then
+            usedWords[word] = true -- Marca como usada
+            return word
+        end
+    end
+
+    return nil
+end
+
+-- Função para limpar o cache para um novo jogo
+function WordData:ResetUsedWords()
+    usedWords = {}
+end
+
+-- [[ LÓGICA DE ANIMAÇÃO ]]
+local TweenInfoDefault = TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+-- Função para criar um Tween de transparência
+local function createTransparencyTween(instance, goal)
+    return TweenService:Create(instance, TweenInfoDefault, {TextTransparency = goal, BackgroundTransparency = goal, ImageTransparency = goal})
+end
+
+-- Função para aplicar o Fade a todos os filhos do Frame
+local function applyChildrenFade(frame, transparencyGoal)
+    for _, obj in ipairs(frame:GetChildren()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextBox") or obj:IsA("TextButton") or obj:IsA("ImageLabel") then
+            createTransparencyTween(obj, transparencyGoal):Play()
+        end
+    end
+end
+
+-- [[ CONSTRUÇÃO DA GUI (Pura) ]]
+
+-- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Brick_Lite"
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
+ScreenGui.Name = "LastLetterHelperGui"
 ScreenGui.Parent = PlayerGui
 
+-- MainFrame (Com bordas arredondadas)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 350, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-MainFrame.BackgroundTransparency = 0.3
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
+MainFrame.Size = UDim2.new(0, 250, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -75) -- Centralizado
+MainFrame.BackgroundColor3 = GUI_COLOR
+MainFrame.BorderColor3 = GUI_COLOR
 MainFrame.Parent = ScreenGui
 
+-- Adiciona bordas arredondadas
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
+Corner.CornerRadius = UDim.new(0, CORNER_RADIUS)
 Corner.Parent = MainFrame
 
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(0,0,0)
-Stroke.Thickness = 2
-Stroke.Transparency = 0.4
-Stroke.Parent = MainFrame
+-- Topbar Drag (Permite arrastar a janela)
+local Topbar = Instance.new("Frame")
+Topbar.Name = "Topbar"
+Topbar.Size = UDim2.new(1, 0, 0, 20)
+Topbar.BackgroundColor3 = GUI_COLOR
+Topbar.BackgroundTransparency = 0.5
+Topbar.Parent = MainFrame
+-- (Lógica de arrasto omitida para brevidade, mas você sabe como adicionar)
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundTransparency = 1
-Title.Text = "🧱 Brick Protection Hub"
-Title.TextColor3 = Color3.new(1,1,1)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
-Title.Parent = MainFrame
+-- PrefixTextBox
+local PrefixTextBox = Instance.new("TextBox")
+PrefixTextBox.Name = "PrefixTextBox"
+PrefixTextBox.Size = UDim2.new(1, -20, 0, 30)
+PrefixTextBox.Position = UDim2.new(0, 10, 0, 30)
+PrefixTextBox.BackgroundColor3 = BUTTON_COLOR
+PrefixTextBox.TextColor3 = TEXT_COLOR
+PrefixTextBox.TextSize = 18
+PrefixTextBox.Text = "Últimas Letras (Prefix)"
+PrefixTextBox.PlaceholderText = "Ex: at, ty, th"
+PrefixTextBox.Parent = MainFrame
+Instance.new("UICorner", PrefixTextBox).CornerRadius = UDim.new(0, 6)
 
---== Container para os módulos ==--
-local ModuleContainer = Instance.new("Frame")
-ModuleContainer.Name = "ModuleContainer"
-ModuleContainer.Size = UDim2.new(1, -20, 1, -40)
-ModuleContainer.Position = UDim2.new(0, 10, 0, 35)
-ModuleContainer.BackgroundTransparency = 1
-ModuleContainer.Parent = MainFrame
+-- GenerateButton
+local GenerateButton = Instance.new("TextButton")
+GenerateButton.Name = "GenerateButton"
+GenerateButton.Size = UDim2.new(0.5, -15, 0, 30)
+GenerateButton.Position = UDim2.new(0, 10, 0, 70)
+GenerateButton.BackgroundColor3 = BUTTON_COLOR
+GenerateButton.TextColor3 = TEXT_COLOR
+GenerateButton.Text = "GERAR PALAVRA"
+GenerateButton.Parent = MainFrame
+Instance.new("UICorner", GenerateButton).CornerRadius = UDim.new(0, 6)
 
-local UIList = Instance.new("UIListLayout")
-UIList.Padding = UDim.new(0, 8)
-UIList.FillDirection = Enum.FillDirection.Vertical
-UIList.SortOrder = Enum.SortOrder.LayoutOrder
-UIList.Parent = ModuleContainer
+-- ResetButton
+local ResetButton = Instance.new("TextButton")
+ResetButton.Name = "ResetButton"
+ResetButton.Size = UDim2.new(0.5, -15, 0, 30)
+ResetButton.Position = UDim2.new(0.5, 5, 0, 70)
+ResetButton.BackgroundColor3 = BUTTON_COLOR
+ResetButton.TextColor3 = TEXT_COLOR
+ResetButton.Text = "RESETAR (Cache)"
+ResetButton.Parent = MainFrame
+Instance.new("UICorner", ResetButton).CornerRadius = UDim.new(0, 6)
 
----------------------------------------------------------------------
---== MÓDULO 1: ANTI UNANCHORED FLING (ORIGINAL) ==--
----------------------------------------------------------------------
-local function wha()
-	getgenv().isnetworkowner = newcclosure(function(part)
-		return (part.ReceiveAge == 0 and gethiddenproperty(part, "NetworkIsSleeping") == false)
-	end)
+-- OutputLabel (Onde a palavra aparece)
+local OutputLabel = Instance.new("TextLabel")
+OutputLabel.Name = "OutputLabel"
+OutputLabel.Size = UDim2.new(1, -20, 0, 30)
+OutputLabel.Position = UDim2.new(0, 10, 0, 110)
+OutputLabel.BackgroundColor3 = GUI_COLOR
+OutputLabel.BackgroundTransparency = 1
+OutputLabel.TextColor3 = TEXT_COLOR
+OutputLabel.TextSize = 16
+OutputLabel.Text = "Status: Pronto!"
+OutputLabel.TextXAlignment = Enum.TextXAlignment.Left
+OutputLabel.Parent = MainFrame
 
-	game.Players.LocalPlayer.SimulationRadius = math.huge
-	game.Players.LocalPlayer.SimulationRadiusChanged:Connect(function()
-		game.Players.LocalPlayer.ReplicationFocus = workspace
-		sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
-		sethiddenproperty(game.Players.LocalPlayer, "MaxSimulationRadius", math.huge)
-		sethiddenproperty(game.Players.LocalPlayer, "MaximumSimulationRadius", math.huge)
-	end)
+-- MinimizeButton
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 20, 0, 20)
+MinimizeButton.Position = UDim2.new(1, -40, 0, 0)
+MinimizeButton.BackgroundColor3 = GUI_COLOR
+MinimizeButton.BackgroundTransparency = 1
+MinimizeButton.TextColor3 = TEXT_COLOR
+MinimizeButton.TextSize = 16
+MinimizeButton.Text = "_"
+MinimizeButton.Parent = Topbar
 
-	game:GetService("RunService").PreSimulation:Connect(function()
-		local parts = workspace:GetPartBoundsInRadius(game.Players.LocalPlayer.Character.HumanoidRootPart.Position, 50)
-		for _, part in next, parts do
-			if part.Anchored == false and not isnetworkowner(part) and part.Velocity.Magnitude >= 4 and not game.Players:GetPlayerFromCharacter(part.Parent) then
-				part.CanCollide = isnetworkowner(part)
-				part.CanTouch = isnetworkowner(part)
-				part.Velocity = Vector3.zero
-				part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0)
-				part.Massless = not isnetworkowner(part)
-				part.AssemblyLinearVelocity = Vector3.zero
-				part.AssemblyAngularVelocity = Vector3.zero
-				for _, phys in next, part:GetDescendants() do
-					if phys:IsA("Constraint") or phys:IsA("BodyMover") then
-						phys:Destroy()
-					end
-				end
-			end
-		end
-	end)
-end
+-- CloseButton
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 20, 0, 20)
+CloseButton.Position = UDim2.new(1, -20, 0, 0)
+CloseButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseButton.BackgroundTransparency = 1
+CloseButton.TextColor3 = TEXT_COLOR
+CloseButton.TextSize = 16
+CloseButton.Text = "X"
+CloseButton.Parent = Topbar
 
----------------------------------------------------------------------
---== MÓDULO 2: ANTI TRIP (ORIGINAL) ==--
----------------------------------------------------------------------
-local AntiTripSystem = { Enabled = false, Connections = {} }
+-- [[ EVENTOS ]]
 
-local function toggleAntiTrip()
-	if AntiTripSystem.Enabled then
-		AntiTripSystem.Enabled = false
-		if AntiTripSystem.Connections.heartbeat then
-			AntiTripSystem.Connections.heartbeat:Disconnect()
-			AntiTripSystem.Connections.heartbeat = nil
-		end
-
-		if AntiTripSystem.Connections.characterAdded then
-			AntiTripSystem.Connections.characterAdded:Disconnect()
-			AntiTripSystem.Connections.characterAdded = nil
-		end
-	else
-		AntiTripSystem.Enabled = true
-		local player = game.Players.LocalPlayer
-
-		local function monitorHumanoid(humanoid)
-			if AntiTripSystem.Connections.heartbeat then
-				AntiTripSystem.Connections.heartbeat:Disconnect()
-			end
-
-			AntiTripSystem.Connections.heartbeat = game:GetService("RunService").Heartbeat:Connect(function()
-				if not AntiTripSystem.Enabled or not humanoid or not humanoid.Parent then
-					if AntiTripSystem.Connections.heartbeat then
-						AntiTripSystem.Connections.heartbeat:Disconnect()
-						AntiTripSystem.Connections.heartbeat = nil
-					end
-					return
-				end
-
-				local state = humanoid:GetState()
-				if state == Enum.HumanoidStateType.Seated
-				or state == Enum.HumanoidStateType.FallingDown
-				or state == Enum.HumanoidStateType.Ragdoll then
-					humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-				end
-
-				if humanoid.Sit then
-					humanoid.Sit = false
-				end
-			end)
-		end
-
-		if player.Character then
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				monitorHumanoid(humanoid)
-			end
-		end
-
-		if AntiTripSystem.Connections.characterAdded then
-			AntiTripSystem.Connections.characterAdded:Disconnect()
-		end
-
-		AntiTripSystem.Connections.characterAdded = player.CharacterAdded:Connect(function(character)
-			if AntiTripSystem.Enabled then
-				local humanoid = character:WaitForChild("Humanoid")
-				monitorHumanoid(humanoid)
-			end
-		end)
-	end
-end
-
----------------------------------------------------------------------
---== BOTÕES PARA OS MÓDULOS ==--
----------------------------------------------------------------------
-local function createModuleButton(name, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, 0, 0, 40)
-	frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-	frame.BackgroundTransparency = 0.2
-	frame.Parent = ModuleContainer
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = frame
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(0, 0, 0)
-	stroke.Thickness = 1
-	stroke.Transparency = 0.5
-	stroke.Parent = frame
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0.7, 0, 1, 0)
-	label.Position = UDim2.new(0.05, 0, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = name
-	label.TextColor3 = Color3.new(1,1,1)
-	label.Font = Enum.Font.SourceSansBold
-	label.TextSize = 16
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = frame
-
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(0.2, 0, 0.7, 0)
-	button.Position = UDim2.new(0.75, 0, 0.15, 0)
-	button.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-	button.Text = "OFF"
-	button.TextColor3 = Color3.new(1,1,1)
-	button.Font = Enum.Font.SourceSansBold
-	button.TextSize = 14
-	button.Parent = frame
-
-	local corner2 = Instance.new("UICorner")
-	corner2.CornerRadius = UDim.new(1, 0)
-	corner2.Parent = button
-
-	local enabled = false
-	button.MouseButton1Click:Connect(function()
-		enabled = not enabled
-		local color = enabled and Color3.fromRGB(50,150,70) or Color3.fromRGB(150,50,50)
-		button.Text = enabled and "ON" or "OFF"
-		TweenService:Create(button, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {BackgroundColor3 = color}):Play()
-		callback(enabled)
-	end)
-end
-
--- Registrar módulos
-createModuleButton("Anti Unanchored Fling", function(enabled)
-	if enabled then
-		wha()
-	else
-		print("[Anti-Fling] Desativado (sem loop contínuo)")
-	end
+-- Fechar (Animação de Fade)
+CloseButton.MouseButton1Click:Connect(function()
+    local frameTween = TweenService:Create(MainFrame, TweenInfoDefault, {BackgroundTransparency = 1, BorderTransparency = 1})
+    applyChildrenFade(MainFrame, 1) -- Transparência 1 (invisível)
+    frameTween:Play()
+    frameTween.Completed:Wait()
+    ScreenGui:Destroy()
 end)
 
-createModuleButton("Anti Trip", function(enabled)
-	toggleAntiTrip()
+-- Minimizar (Animação de Fade)
+MinimizeButton.MouseButton1Click:Connect(function()
+    local frameTween = TweenService:Create(MainFrame, TweenInfoDefault, {BackgroundTransparency = 1, BorderTransparency = 1})
+    applyChildrenFade(MainFrame, 1)
+    frameTween:Play()
+    frameTween.Completed:Wait()
+    MainFrame.Visible = false
 end)
 
-print("[✅ Brick_Lite] Carregado com GUI original e 2 módulos ativos.")
+-- Gerar Palavra
+GenerateButton.MouseButton1Click:Connect(function()
+    local prefix = PrefixTextBox.Text:lower():gsub("%s+", "")
+    
+    if #prefix == 0 then
+        OutputLabel.Text = "ERRO: Digite as letras finais."
+        return
+    end
+
+    OutputLabel.Text = "Buscando..."
+    
+    local foundWord = WordData:FindWord(prefix)
+    
+    if foundWord then
+        OutputLabel.Text = "Palavra: " .. foundWord
+        -- ENVIA A PALAVRA NO CHAT, essencial para a funcionalidade do executor
+        -- 'nil' no primeiro argumento é o padrão quando se usa o ChatService no cliente/executor.
+        Chat:Chat(nil, foundWord, "All") 
+    else
+        OutputLabel.Text = "Nenhuma palavra encontrada."
+    end
+end)
+
+-- Resetar Cache
+ResetButton.MouseButton1Click:Connect(function()
+    WordData:ResetUsedWords() 
+    OutputLabel.Text = "Cache de palavras limpo!"
+end)
+
+-- Garante que o MainFrame seja arrastável (Se desejar)
+local isDragging = false
+local dragStart
+Topbar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = true
+        dragStart = input.Position - MainFrame.AbsolutePosition
+        input.Handled = true
+    end
+end)
+
+Topbar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isDragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        MainFrame.Position = UDim2.new(0, input.Position.X - dragStart.X, 0, input.Position.Y - dragStart.Y)
+    end
+end)
+
+-- ** INÍCIO **: Fade In de abertura para a GUI
+local initialGoal = {BackgroundTransparency = 0, BorderTransparency = 0}
+local openFrameTween = TweenService:Create(MainFrame, TweenInfoDefault, initialGoal)
+applyChildrenFade(MainFrame, 0) -- Transparência 0 (visível)
+openFrameTween:Play()
