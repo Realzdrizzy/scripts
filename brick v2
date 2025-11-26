@@ -1,0 +1,516 @@
+-- [1. LÓGICA DO WORD HUB (REUTILIZADA)]
+
+local USED_WORDS = {}
+
+-- DICIONÁRIO EXPANDIDO (V2.0: Lista Massivamente Expandida)
+local WORD_LIST = {
+    -- A
+    "apple", "answer", "antelope", "amazing", "animal", "art", "area", "author", 
+    "abuse", "agency", "ability", "access", "account", "achieve", "acquire", "address", 
+    "admission", "admit", "adult", "affect", "afford", "african", "after", "again", 
+    "against", "age", "agent", "ago", "agree", "ahead", "air", "allow", "almost", 
+    "alone", "along", "already", "also", "although", "always", "american", "amount", 
+    "analysis", "anger", "announce", "annual", "another", "anxiety", "anybody", "appear", 
+    "apply", "approach", "appropriate", "approve", "argue", "arm", "around", "arrive", 
+    "article", "aside", "ask", "asset", "assume", "attack", "attempt", "attend", 
+    "attention", "attorney", "audience", "authority", "available", "avoid", "award", 
+    "aware", "away", "abandon", "absolute", "academic", "accept", "accident", "accompany",
+    "accomplish", "accurate", "acknowledge", "acquire", "action", "active", "actually", 
+    "adapt", "addition", "adequate", "adjust", "administer", "advance", "advantage", 
+    "adventure", "advice", "advise", "advocate", "aerial", "aesthetic", "affection", 
+    "agenda", "aggressive", "aircraft", "aisle", "alert", "algebra", "alien", "allegedly",
+    "alliance", "allocate", "alternative", "ambition", "amend", "ample", "ancestor", 
+    "anchor", "ancient", "anonymous", "anticipate", "apology", "apparent", "appeal", 
+    "apprehend", "arbitrary", "archaeology", "architect", "assembly", "assess", "assign", 
+    "assist", "associate", "astronomy", "attitude", "auction", "augment", "automatic",
+    "autumn", "average", "axis", "azure",
+
+    -- B
+    "book", "banana", "better", "bicycle", "brother", "bridge", "burst", "byte", 
+    "baby", "back", "bad", "ball", "bank", "bar", "base", "be", "beat", 
+    "beautiful", "because", "become", "bed", "before", "begin", "behavior", "behind", 
+    "believe", "benefit", "best", "beyond", "big", "bill", "billion", "bit", 
+    "black", "blood", "blue", "board", "body", "bomb", "bond", "bone", "boom", 
+    "born", "boss", "both", "box", "boy", "break", "brief", "bring", "british", 
+    "budget", "build", "building", "business", "busy", "buy", "by", "bachelor", 
+    "baffle", "balance", "balcony", "bargain", "barrier", "basket", "battle", "beach",
+    "behave", "belief", "belong", "bench", "beneath", "bias", "bid", "bind", 
+    "biography", "bishop", "blanket", "blast", "blend", "bless", "blind", "block", 
+    "blog", "boat", "border", "borrow", "bother", "bottle", "bottom", "breeze",
+    "brick", "bride", "brown", "brush", "bucket", "bulb", "bullet", "bunch", 
+    "burden", "bury", "butter", "button", "bizarre",
+
+    -- C
+    "cat", "chair", "cold", "color", "country", "curious", "car", "city", "call", 
+    "camera", "camp", "campaign", "can", "cancer", "candidate", "capital", "card", 
+    "care", "career", "carry", "case", "catch", "cause", "cell", "center", 
+    "central", "century", "certain", "challenge", "chance", "change", "character", "charge", 
+    "check", "child", "choice", "choose", "church", "citizen", "claim", "class", 
+    "clear", "clearly", "close", "coach", "collection", "college", "combine", "come", 
+    "commercial", "common", "community", "company", "compare", "computer", "concern", "condition", 
+    "conference", "congress", "consider", "consumer", "contain", "continue", "control", "cost", 
+    "could", "couple", "course", "court", "cover", "create", "crime", "cultural", 
+    "culture", "cup", "current", "customer", "cut", "cycle", "cabinet", "calculate",
+    "capacity", "capture", "carbon", "casual", "category", "ceiling", "celebrate", 
+    "ceremony", "chain", "champion", "channel", "chaos", "chapter", "charity", 
+    "chase", "chief", "circle", "civil", "classic", "climate", "climb", "clinic", 
+    "coast", "code", "collapse", "colleague", "comment", "commit", "complex", 
+    "component", "compose", "comprehensive", "compromise", "concentrate", "concept", 
+    "conduct", "confident", "confirm", "conflict", "confront", "connect", "conscious", 
+    "consequence", "conservative", "constant", "construct", "consult", "contact", 
+    "contemporary", "contest", "contract", "contribute", "controversy", "convention", 
+    "cope", "corner", "corporate", "correspond", "corridor", "council", "counter", 
+    "county", "crack", "craft", "crash", "crazy", "creative", "credit", "crew", 
+    "crisis", "critical", "crowd", "crucial", "cruel", "crystal", "cumulative",
+    "curiosity", "curve", "cynical",
+
+    -- D
+    "dog", "dark", "day", "door", "doubt", "dozen", "dream", "dress",
+    "damage", "danger", "deal", "debate", "decade", "decide", "decision", "deep", 
+    "defense", "defend", "define", "degree", "demand", "democratic", "demonstrate", "deny", 
+    "depend", "department", "design", "detail", "detect", "determine", "develop", "device", 
+    "difference", "different", "difficult", "dinner", "direction", "discover", "discuss", "disease", 
+    "do", "doctor", "document", "doing", "double", "down", "draw", "drop", 
+    "during", "dust", "duty", "daily", "dairy", "daisy", "database", "daughter",
+    "dead", "decent", "decline", "dedicate", "default", "deficit", "deliver", 
+    "democracy", "deposit", "depress", "depth", "derive", "desert", "deserve", 
+    "desire", "despite", "destroy", "devote", "dialogue", "diet", "digital", 
+    "dimension", "diplomat", "disappear", "discipline", "disclose", "discount", 
+    "dispute", "distinct", "distribute", "diverse", "divide", "divorce", "domain", 
+    "domestic", "dominant", "donate", "dramatic", "drift", "drive", "drown", 
+    "due", "dull", "dump", "dynamic", "dawn", "deer", "dolphin",
+
+    -- E
+    "earth", "east", "easy", "echo", "editor", "engine", "enough", "erase", 
+    "early", "earn", "ease", "economy", "edge", "education", "effect", "efficient", 
+    "effort", "eight", "either", "elderly", "elect", "element", "else", "employee", 
+    "end", "energy", "enjoy", "ensure", "entire", "environment", "equal", "equipment", 
+    "error", "escape", "establish", "even", "evening", "event", "ever", "every", 
+    "evidence", "evil", "exact", "example", "except", "exchange", "executive", "exist", 
+    "expect", "expense", "experience", "expert", "explain", "explore", "express", "extend", 
+    "external", "eye", "eager", "ecology", "editorial", "elaborate", "elegant", 
+    "eliminate", "elite", "embarrass", "embrace", "emerge", "emotion", "emphasis", 
+    "empire", "enable", "encounter", "encourage", "endorse", "engage", "enhance", 
+    "enormous", "enthusiasm", "entity", "epic", "episode", "equity", "era", 
+    "essence", "essential", "estate", "estimate", "ethnic", "evaluate", "exceed", 
+    "excellent", "exception", "excess", "exclude", "exclusive", "execute", "exercise", 
+    "exhibit", "exile", "expand", "expansion", "expectation", "expedition", "expenditure", 
+    "experiment", "explicit", "expose", "extend", "extent", "extraordinary", "extreme",
+    "elder", "electric", "envelope",
+
+    -- F
+    "fox", "fact", "family", "fast", "feel", "figure", "fire", "forest", 
+    "face", "factor", "fail", "fall", "far", "farm", "father", "fear", 
+    "federal", "fee", "feed", "female", "few", "field", "fight", "file", 
+    "fill", "film", "final", "financial", "find", "fine", "finger", "finish", 
+    "first", "fit", "five", "floor", "fly", "focus", "follow", "food", "foot", 
+    "force", "foreign", "forget", "form", "former", "forward", "four", "free", 
+    "friend", "from", "front", "full", "fund", "future", "fabric", "facility", 
+    "faith", "false", "fame", "fantastic", "fantasy", "fashion", "fatal", 
+    "favorite", "feature", "fiction", "fifteen", "fifty", "flexibility", 
+    "float", "flour", "flower", "fluid", "fortune", "foundation", "frame", 
+    "framework", "fraud", "freedom", "frequent", "fuel", "fulfill", "function", 
+    "furniture", "further", "fuss", "fairy", "feather", "fever",
+
+    -- G
+    "giant", "game", "garage", "garden", "glass", "glove", "group", "guitar", 
+    "gain", "gallery", "gap", "gas", "gather", "general", "generation", "get", 
+    "girl", "give", "glad", "goal", "go", "god", "gold", "good", "government", 
+    "graduate", "grand", "grass", "great", "green", "ground", "grow", "growth", 
+    "guess", "gun", "galaxy", "gambling", "genuine", "geography", "ghost", 
+    "glance", "glory", "gossip", "govern", "grace", "gradually", "grain", 
+    "grant", "graphic", "grave", "grip", "gross", "guarantee", "guard", 
+    "guidance", "guilty", "gaze", "gentle", "globe",
+
+    -- H
+    "hello", "horse", "honest", "hope", "house", "human", "hungry", "hydrant", 
+    "hair", "half", "hall", "hand", "hang", "happen", "happy", "hard", 
+    "have", "he", "head", "health", "hear", "heart", "heat", "heavy", 
+    "help", "her", "here", "herself", "high", "him", "himself", "his", 
+    "history", "hit", "hold", "home", "hot", "hotel", "hour", "how", 
+    "however", "huge", "hundred", "husband", "habit", "habitat", "handful", 
+    "harbor", "harm", "hasty", "hatred", "headline", "heaven", "height", 
+    "helmet", "heritage", "hesitate", "highway", "hollow", "honor", "horizon", 
+    "hostage", "housing", "humble", "humor", "hurricane", "hypothetical", 
+    "handicap", "harvest", "hero",
+
+    -- I
+    "ice", "idea", "image", "impact", "index", "insect", "island", "iron", 
+    "identify", "if", "imagine", "immediate", "important", "improve", "in", "include", 
+    "income", "increase", "indeed", "indicate", "individual", "industry", "inform", "inside", 
+    "instead", "institution", "interest", "international", "interview", "into", "invest", "involve", 
+    "issue", "it", "item", "its", "itself", "illegal", "illustrate", "immigration", 
+    "immune", "implement", "imply", "impose", "impress", "incident", "incline", 
+    "incorporate", "incredible", "incur", "independent", "industrial", "infinite", 
+    "influence", "inherit", "initial", "initiative", "inject", "injury", "innocent", 
+    "innovation", "input", "inquire", "insist", "install", "insurance", "integrate", 
+    "integrity", "intend", "intense", "interact", "internal", "interpret", 
+    "intervention", "intimate", "investigate", "invisible", "invitation", "involve", 
+    "irrelevant", "isolate", "ivory", "ideal", "illusion",
+
+    -- J
+    "jet", "job", "join", "joke", "jungle", "jump", "junior", "justice", 
+    "jail", "journey", "judge", "just", "jacket", "jargon", "jaw", "jealous", 
+    "jewel", "journal", "joy", "juggle", "junction", "jury", "juvenile",
+
+    -- K
+    "key", "kind", "king", "kitchen", "knife", "knock", "knowledge", "know", 
+    "keep", "kill", "major", "kick", "kidney", "knit", "knot", "label", 
+
+    -- L
+    "lamp", "language", "last", "leaf", "learn", "lemon", "library", "light", 
+    "land", "large", "later", "law", "lawyer", "lay", "lead", "leader", 
+    "least", "leave", "left", "leg", "legal", "less", "let", "letter", 
+    "level", "lie", "life", "limit", "line", "list", "listen", "little", 
+    "live", "local", "long", "look", "lose", "loss", "lot", "love", 
+    "low", "laboratory", "ladder", "landscape", "laser", "launch", "layer", 
+    "legacy", "legend", "legislation", "legitimate", "lend", "length", 
+    "liberal", "license", "lifestyle", "link", "liquid", "literal", 
+    "loan", "logic", "lonely", "lounge", "loyalty", "luxury", "lyric", 
+
+    -- M
+    "map", "market", "matter", "meal", "memory", "method", "mirror", "money", 
+    "machine", "magazine", "main", "maintain", "majority", "make", "man", 
+    "manage", "management", "manager", "many", "margin", "material", "may", "maybe", 
+    "me", "mean", "measure", "media", "medical", "meet", "meeting", "member", 
+    "mention", "message", "middle", "might", "military", "million", "mind", "minute", 
+    "miss", "mission", "model", "modern", "moment", "month", "more", "morning", 
+    "most", "mother", "move", "movement", "movie", "much", "music", "must", "my", 
+    "myself", "magic", "mainstream", "manifest", "manufacture", "master", 
+    "maximum", "mechanism", "medal", "medium", "mental", "mercy", "merely", 
+    "mess", "metal", "mighty", "minimum", "ministry", "minority", "mistake", 
+    "mobile", "modify", "module", "monitor", "moral", "mortgage", "motivate", 
+    "mount", "muscle", "mystery", 
+
+    -- N
+    "name", "nation", "nature", "near", "network", "never", "night", "number", 
+    "national", "native", "natural", "nearly", "necessary", "need", "negotiate", 
+    "neighbor", "neither", "nerve", "new", "news", "next", "nice", "no", "nobody", 
+    "north", "note", "nothing", "notice", "now", "nuclear", "nail", "naked", 
+    "narrative", "narrow", "nasty", "neat", "negative", "neglect", "neutral", 
+    "nevertheless", "nominate", "normal", "nostalgia", "novel", "nuance", 
+    "numerous", "nurse", "nutrition", 
+
+    -- O
+    "ocean", "offer", "office", "oil", "opera", "order", "other", "owner", 
+    "occur", "off", "old", "once", "one", "only", "open", "operation", 
+    "opinion", "opportunity", "oppose", "option", "or", "organization", "organize", 
+    "original", "ought", "our", "out", "outside", "over", "own", "obey", 
+    "object", "obligation", "observe", "obvious", "occupation", "odd", 
+    "offensive", "official", "offset", "ongoing", "online", "onto", 
+    "oppose", "oral", "organic", "outcome", "outline", "output", "overcome", 
+    "overlook", "overwhelm", 
+
+    -- P
+    "paint", "paper", "park", "party", "person", "photo", "plane", "power", 
+    "pain", "pair", "panel", "parent", "pass", "past", "patient", "pattern", 
+    "pay", "peace", "people", "per", "perform", "perhaps", "period", "permit", 
+    "physical", "pick", "picture", "piece", "place", "plan", "plant", "play", 
+    "player", "point", "police", "policy", "political", "pool", "poor", "popular", 
+    "population", "position", "positive", "possible", "post", "practice", 
+    "prepare", "present", "president", "pressure", "pretty", "price", "private", "probably", 
+    "problem", "process", "produce", "product", "professor", "program", "project", "property", 
+    "protect", "public", "pull", "purpose", "push", "put", "pace", "package", 
+    "palm", "paradox", "parliament", "partial", "participate", "particular", 
+    "partner", "passage", "passion", "passive", "patent", "path", "pause", 
+    "perception", "permanent", "perspective", "philosophy", "phone", "phrase", 
+    "pillar", "pilot", "pioneer", "platform", "plenty", "plot", "plus", 
+    "pocket", "portray", "possess", "potential", "poverty", "preach", "precise", 
+    "prefer", "premise", "premium", "prescribe", "preserve", "primary", "prime", 
+    "principal", "prior", "priority", "procession", "profound", "progress", 
+    "prohibit", "prompt", "propose", "prosecute", "prospect", "protocol", 
+    "province", "publish", "punch", "pursue", "puzzle", 
+
+    -- Q
+    "quick", "quiet", "quilt", "queen", "query", "question", "quotient", "queue", 
+    "quality", "qualify", "quantity", "quarter", "quit", "quote", "quarrel",
+
+    -- R
+    "radio", "rain", "reach", "ready", "reason", "report", "river", "road", 
+    "race", "range", "rate", "rather", "read", "real", "realize", "really", 
+    "receive", "recent", "recognize", "record", "recover", "red", "reduce", "reflect", 
+    "reform", "refuse", "region", "relate", "release", "remain", "remember", "remove", 
+    "repeat", "replace", "reply", "represent", "republican", "request", "require", "research", 
+    "resource", "respond", "response", "rest", "result", "return", "reveal", "rich", 
+    "right", "rise", "risk", "rock", "role", "room", "rule", "run", "radical", 
+    "rail", "random", "rapid", "rarely", "ratio", "raw", "reaction", 
+    "reading", "reality", "rebel", "recall", "receipt", "recommend", 
+    "recession", "recipe", "recognition", "recruit", "refer", "refugee", 
+    "regard", "regime", "regulate", "reject", "relevance", "relief", 
+    "relieve", "rely", "remark", "remote", "render", "rent", "reputation", 
+    "rescue", "reserve", "reside", "resistance", "resolution", "restore", 
+    "retreat", "revenue", "reverse", "review", "reward", "rhythm", "ridicule", 
+    "robust", "rocket", "routine", "rubbish", "rug", "rural",
+
+    -- S
+    "sea", "school", "science", "secret", "sense", "sister", "space", "sport", 
+    "safe", "same", "save", "say", "scene", "score", "season", "second", 
+    "section", "security", "see", "seek", "seem", "sell", "send", "senior", 
+    "series", "serious", "serve", "service", "set", "seven", "several", "shake", 
+    "share", "she", "shoot", "short", "should", "show", "side", "sign", 
+    "similar", "simple", "since", "sing", "single", "sir", "sister", "site", 
+    "situation", "six", "size", "skill", "small", "social", "society", "some", 
+    "somebody", "something", "sometimes", "soon", "sort", "sound", "south", "southern", 
+    "speak", "special", "specific", "spend", "spring", "staff", "stage", "stand", 
+    "standard", "start", "state", "statement", "station", "stay", "step", "still", 
+    "stock", "stop", "store", "story", "strategy", "street", "strong", "structure", 
+    "student", "study", "stuff", "style", "subject", "success", "such", "suddenly", 
+    "suffer", "suggest", "suit", "summer", "support", "sure", "system", "sacrifice", 
+    "salary", "sample", "sanction", "satellite", "satisfy", "scale", 
+    "scandal", "scatter", "scheme", "scope", "scratch", "screen", 
+    "script", "sector", "secure", "segment", "selection", "self", "semester", 
+    "seminar", "settle", "severity", "shadow", "shape", "shelter", 
+    "shift", "shock", "signal", "significant", "silence", "silver", 
+    "simulate", "skeleton", "sleep", "slide", "slot", "smart", "smooth", 
+    "somehow", "source", "space", "span", "spare", "species", "spectacle", 
+    "spectrum", "speed", "sphere", "split", "sponsor", "spot", "spouse", 
+    "spread", "square", "stable", "stack", "stair", "statue", "status", 
+    "steel", "steer", "stiff", "stir", "storage", "strain", "stream", 
+    "stress", "stretch", "strike", "string", "strip", "struggle", "studio", 
+    "submit", "subsequent", "substance", "subtle", "suburb", "sufficient", 
+    "suicide", "superb", "supervise", "supply", "surface", "surgery", 
+    "surprise", "survive", "suspect", "sustain", "symbol", "symptom", 
+    "syndrome", "synthetic", 
+
+    -- T
+    "table", "talk", "team", "tell", "thank", "their", "theory", "thunder", 
+    "take", "talent", "task", "tax", "teach", "teacher", "technology", "television", 
+    "ten", "tend", "term", "test", "than", "that", "the", "their", 
+    "them", "themselves", "then", "there", "therefore", "these", "they", "thing", 
+    "think", "third", "this", "those", "though", "three", "through", "throw", 
+    "thus", "time", "to", "today", "together", "tonight", "too", "top", 
+    "total", "tough", "toward", "town", "trade", "traditional", "training", "travel", 
+    "treat", "treatment", "tree", "trial", "trip", "trouble", "true", "truth", 
+    "try", "turn", "tv", "two", "type", "tactic", "tail", "target", "taste", 
+    "tenant", "tender", "tension", "terrain", "terrible", "territory", 
+    "text", "therapy", "thesis", "thorough", "threat", "throat", "ticket", 
+    "tight", "tiny", "tip", "tire", "tissue", "title", "tone", "tour", 
+    "trace", "track", "tradition", "traffic", "transfer", "transform", 
+    "transparent", "trap", "treasure", "trend", "tribute", "trick", 
+    "trigger", "troop", "tropical", "trust", "tunnel", "typical",
+
+    -- U
+    "unit", "under", "union", "unique", "united", "universe", "until", "use", 
+    "unable", "uncle", "understand", "unite", "universal", "unless", "unlike", "unlikely", 
+    "up", "upon", "us", "used", "useful", "user", "usual", "usually", "ultimate", 
+    "uncover", "undergo", "undertake", "uniform", "unify", "unprecedented", "urban", 
+    "urgency", "urgent", "utility", 
+
+    -- V
+    "value", "various", "vehicle", "version", "video", "view", "village", "voice", 
+    "very", "victim", "victory", "violence", "visit", "vote", "vague", 
+    "valid", "vanish", "variable", "variation", "vast", "vegetable", 
+    "velocity", "venture", "verbal", "verdict", "verify", "vessel", "veteran", 
+    "via", "vibrant", "visual", "vital", "vitamin", "vulnerable", 
+
+    -- W
+    "wall", "want", "watch", "water", "weather", "where", "while", "window", 
+    "walk", "war", "warm", "was", "waste", "way", "we", "weapon", 
+    "wear", "week", "weight", "well", "west", "what", "whatever", "when", 
+    "whether", "which", "while", "white", "who", "whole", "whom", "whose", 
+    "why", "wide", "wife", "will", "win", "wind", "window", "wish", 
+    "with", "within", "without", "woman", "wonder", "word", "work", 
+    "worker", "world", "worry", "would", "write", "writer", "wrong", 
+    "wage", "wander", "wardrobe", "warrant", "weakness", "wealth", 
+    "web", "wedding", "weird", "welcome", "welfare", "wheel", "whisper", 
+    "whole", "wisdom", "withdraw", "witness", "wooden", "worth", 
+    "wound", "wrap", "wreck", 
+
+    -- X
+    "xylophone", "x-ray", "xenophobia", "xanthene", "xerography",
+
+    -- Y
+    "year", "yellow", "yes", "yesterday", "young", "youth", "yawn", "yard", 
+    "you", "yourself", "yield", "yoga", 
+
+    -- Z
+    "zero", "zebra", "zone", "zoom", "zinc", "zipper", "zealous", "zenith"
+}
+
+-- Limpa a lista de palavras usadas, iniciando um novo jogo.
+local function ResetGame()
+    for k in pairs(USED_WORDS) do
+        USED_WORDS[k] = nil
+    end
+    -- Atualiza a GUI com o status de reset
+    if GUI and GUI.MainFrame and GUI.MainFrame.ResultLabel then
+        GUI.MainFrame.ResultLabel.Text = "Jogo Resetado. Digite o Prefixo."
+    end
+end
+
+-- Gera uma palavra aleatória que começa com o prefixo fornecido e que ainda não foi usada.
+local function GenerateWord(prefix)
+    prefix = tostring(prefix):lower()
+    local prefixLength = #prefix
+    local availableWords = {}
+
+    -- 1. FILTRAGEM
+    for _, word in ipairs(WORD_LIST) do
+        local lowerWord = word:lower()
+        
+        local startsWithPrefix = lowerWord:sub(1, prefixLength) == prefix
+        local isUsed = USED_WORDS[lowerWord] == true
+        
+        if startsWithPrefix and not isUsed then
+            table.insert(availableWords, word)
+        end
+    end
+
+    -- 2. SELEÇÃO E 3. MARCAÇÃO COMO USADA
+    if #availableWords > 0 then
+        local randomIndex = math.random(1, #availableWords)
+        local selectedWord = availableWords[randomIndex]
+        
+        USED_WORDS[selectedWord:lower()] = true
+        
+        return selectedWord
+    else
+        return nil 
+    end
+end
+
+
+-- [2. CONSTRUÇÃO DA GUI]
+
+local Player = game:GetService("Players").LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local GUI = {} -- Tabela para armazenar as referências da GUI
+
+-- 2.1. ScreenGui Base
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "WordHub"
+ScreenGui.Parent = PlayerGui
+GUI.ScreenGui = ScreenGui
+
+-- 2.2. Main Frame (Pequeno e Centralizado)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 250, 0, 180)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -90)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.BorderColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Active = true -- Permite interações
+MainFrame.Draggable = true -- Torna arrastável
+MainFrame.Parent = ScreenGui
+GUI.MainFrame = MainFrame
+
+-- 2.3. Top Bar (Título e Controles)
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 25)
+TopBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+TopBar.Parent = MainFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -60, 1, 0)
+TitleLabel.Text = "Word Hub"
+TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextSize = 18
+TitleLabel.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+TitleLabel.Parent = TopBar
+
+-- 2.4. Botão Fechar (X)
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 1, 0)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.Text = "X"
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 16
+CloseButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+CloseButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+CloseButton.Parent = TopBar
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- 2.5. Botão Minimizar (-)
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 30, 1, 0)
+MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
+MinimizeButton.Text = "—" -- Traço longo para minimizar
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.TextSize = 16
+MinimizeButton.TextColor3 = Color3.fromRGB(100, 255, 100)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+MinimizeButton.Parent = TopBar
+GUI.MinimizeButton = MinimizeButton
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    local frameContent = MainFrame.Size.Y.Offset - TopBar.Size.Y.Offset
+    if MainFrame.Size.Y.Offset == 180 then
+        -- Minimizar
+        MainFrame:TweenSize(UDim2.new(0, 250, 0, 25), "Out", "Quad", 0.2, true)
+        MinimizeButton.Text = "+"
+    else
+        -- Maximizar
+        MainFrame:TweenSize(UDim2.new(0, 250, 0, 180), "Out", "Quad", 0.2, true)
+        MinimizeButton.Text = "—"
+    end
+end)
+
+-- 2.6. Caixa de Texto para Prefixo
+local PrefixTextBox = Instance.new("TextBox")
+PrefixTextBox.Size = UDim2.new(0, 210, 0, 30)
+PrefixTextBox.Position = UDim2.new(0.5, -105, 0, 40)
+PrefixTextBox.PlaceholderText = "Digite o Prefixos (ex: th, le)"
+PrefixTextBox.Font = Enum.Font.SourceSans
+PrefixTextBox.TextSize = 16
+PrefixTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+PrefixTextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+PrefixTextBox.Parent = MainFrame
+PrefixTextBox.TextXAlignment = Enum.TextXAlignment.Center
+GUI.PrefixTextBox = PrefixTextBox
+
+-- 2.7. Label de Resultado
+local ResultLabel = Instance.new("TextLabel")
+ResultLabel.Size = UDim2.new(0, 210, 0, 30)
+ResultLabel.Position = UDim2.new(0.5, -105, 0, 80)
+ResultLabel.Text = "Palavra Gerada Aparecerá Aqui"
+ResultLabel.Font = Enum.Font.SourceSansBold
+ResultLabel.TextSize = 16
+ResultLabel.TextColor3 = Color3.fromRGB(255, 255, 150)
+ResultLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ResultLabel.Parent = MainFrame
+ResultLabel.TextXAlignment = Enum.TextXAlignment.Center
+GUI.ResultLabel = ResultLabel
+
+-- 2.8. Botão Gerar
+local GenerateButton = Instance.new("TextButton")
+GenerateButton.Size = UDim2.new(0, 100, 0, 30)
+GenerateButton.Position = UDim2.new(0.5, -105, 0, 120)
+GenerateButton.Text = "GERAR PALAVRA"
+GenerateButton.Font = Enum.Font.SourceSans
+GenerateButton.TextSize = 16
+GenerateButton.TextColor3 = Color3.fromRGB(200, 255, 200)
+GenerateButton.BackgroundColor3 = Color3.fromRGB(70, 100, 70)
+GenerateButton.Parent = MainFrame
+
+GenerateButton.MouseButton1Click:Connect(function()
+    local prefix = PrefixTextBox.Text
+    local generatedWord = GenerateWord(prefix)
+    
+    if generatedWord then
+        ResultLabel.Text = generatedWord
+        -- Opcional: Limpar a caixa de texto após gerar
+        -- PrefixTextBox.Text = "" 
+    else
+        ResultLabel.Text = string.format("Sem palavras para '%s' ou já usadas!", prefix)
+    end
+end)
+
+-- 2.9. Botão Reset
+local ResetButton = Instance.new("TextButton")
+ResetButton.Size = UDim2.new(0, 100, 0, 30)
+ResetButton.Position = UDim2.new(0.5, 5, 0, 120)
+ResetButton.Text = "RESET"
+ResetButton.Font = Enum.Font.SourceSans
+ResetButton.TextSize = 16
+ResetButton.TextColor3 = Color3.fromRGB(255, 180, 180)
+ResetButton.BackgroundColor3 = Color3.fromRGB(100, 70, 70)
+ResetButton.Parent = MainFrame
+
+ResetButton.MouseButton1Click:Connect(function()
+    ResetGame()
+end)
+
+print("Word Hub GUI carregado com sucesso!")
